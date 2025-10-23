@@ -1,10 +1,15 @@
 import db from '../models/index.js';
 const Questions = db.Questions;
+const FormSteps = db.FormSteps;
 
 // Create single or multiple questions for a form step
 export const createQuestions = async (req, res) => {
   try {
     const { formStepId } = req.params;
+     const formStepExists = await FormSteps.findByPk(formStepId);
+    if (!formStepExists) {
+      return res.status(404).json({ message: 'Form step not found', success: false });
+    }
     let questionsData = req.body;
 
     // If questions sent as JSON string, parse it
@@ -13,7 +18,7 @@ export const createQuestions = async (req, res) => {
     }
 
     // Always treat as array for bulkCreate
-    const questionsArray = Array.isArray(questionsData) ? questionsData : [questionsData];
+    const questionsArray = Array.isArray(questionsData.questions) ? questionsData.questions : [questionsData.questions];
 
     const questionsToCreate = questionsArray.map(q => ({
       ...q,

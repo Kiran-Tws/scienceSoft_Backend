@@ -32,10 +32,19 @@ app.use("/api", routes);
 (async () => {
   try {
     // Test the database connection
+     db.sequelize
+      .sync()
+      .then(() => {
+        console.log("Database synced successfully");
+      })
+      .catch((err) => {
+        console.error("Database sync failed:", err);
+      });
     await sequelize.authenticate();
     console.log("Database connected successfully.");
 
     await sequelize.sync();
+   
 
     // Start the server
     app.listen(PORT, () => {

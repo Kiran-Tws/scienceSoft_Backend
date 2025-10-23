@@ -1,5 +1,6 @@
-import db from '../models/index.js';
+import db from "../models/index.js";
 const QuestionOptions = db.QuestionOptions;
+const Questions = db.Questions;
 
 // Create single or multiple options for a question
 export const createQuestionOptions = async (req, res) => {
@@ -7,15 +8,24 @@ export const createQuestionOptions = async (req, res) => {
     const { questionId } = req.params;
     let optionsData = req.body;
 
+    const questionExists = await Questions.findByPk(questionId);
+    if (!questionExists) {
+      return res
+        .status(404)
+        .json({ message: "Question not found", success: false });
+    }
+
     // If options sent as JSON string, parse it
-    if (typeof optionsData.options === 'string') {
+    if (typeof optionsData.options === "string") {
       optionsData = JSON.parse(optionsData.options);
     }
 
     // Always treat as array for bulkCreate
-    const optionsArray = Array.isArray(optionsData) ? optionsData : [optionsData];
+    const optionsArray = Array.isArray(optionsData.options)
+      ? optionsData.options
+      : [optionsData.options];
 
-    const optionsToCreate = optionsArray.map(opt => ({
+    const optionsToCreate = optionsArray.map((opt) => ({
       ...opt,
       question_id: questionId,
     }));
@@ -25,10 +35,10 @@ export const createQuestionOptions = async (req, res) => {
     return res.status(201).json({
       data: createdOptions,
       success: true,
-      message: 'Question options created successfully',
+      message: "Question options created successfully",
     });
   } catch (error) {
-    console.error('Error in createQuestionOptions:', error);
+    console.error("Error in createQuestionOptions:", error);
     return res.status(500).json({ message: error.message, success: false });
   }
 };
@@ -37,14 +47,16 @@ export const createQuestionOptions = async (req, res) => {
 export const getQuestionOptionsByQuestion = async (req, res) => {
   try {
     const { questionId } = req.params;
-    const options = await QuestionOptions.findAll({ where: { question_id: questionId } });
+    const options = await QuestionOptions.findAll({
+      where: { question_id: questionId },
+    });
     return res.status(200).json({
       data: options,
       success: true,
-      message: 'Question options fetched successfully',
+      message: "Question options fetched successfully",
     });
   } catch (error) {
-    console.error('Error in getQuestionOptionsByQuestion:', error);
+    console.error("Error in getQuestionOptionsByQuestion:", error);
     return res.status(500).json({ message: error.message, success: false });
   }
 };
@@ -55,15 +67,17 @@ export const getQuestionOptionById = async (req, res) => {
     const { optionId } = req.params;
     const option = await QuestionOptions.findByPk(optionId);
     if (!option) {
-      return res.status(404).json({ message: 'Question option not found', success: false });
+      return res
+        .status(404)
+        .json({ message: "Question option not found", success: false });
     }
     return res.status(200).json({
       data: option,
       success: true,
-      message: 'Question option fetched successfully',
+      message: "Question option fetched successfully",
     });
   } catch (error) {
-    console.error('Error in getQuestionOptionById:', error);
+    console.error("Error in getQuestionOptionById:", error);
     return res.status(500).json({ message: error.message, success: false });
   }
 };
@@ -73,18 +87,22 @@ export const updateQuestionOption = async (req, res) => {
   try {
     const { optionId } = req.params;
     const updatedData = { ...req.body };
-    const [updated] = await QuestionOptions.update(updatedData, { where: { id: optionId } });
+    const [updated] = await QuestionOptions.update(updatedData, {
+      where: { id: optionId },
+    });
     if (!updated) {
-      return res.status(404).json({ message: 'Question option not found', success: false });
+      return res
+        .status(404)
+        .json({ message: "Question option not found", success: false });
     }
     const updatedOption = await QuestionOptions.findByPk(optionId);
     return res.status(200).json({
       data: updatedOption,
       success: true,
-      message: 'Question option updated successfully',
+      message: "Question option updated successfully",
     });
   } catch (error) {
-    console.error('Error in updateQuestionOption:', error);
+    console.error("Error in updateQuestionOption:", error);
     return res.status(500).json({ message: error.message, success: false });
   }
 };
@@ -95,14 +113,16 @@ export const deleteQuestionOption = async (req, res) => {
     const { optionId } = req.params;
     const deleted = await QuestionOptions.destroy({ where: { id: optionId } });
     if (!deleted) {
-      return res.status(404).json({ message: 'Question option not found', success: false });
+      return res
+        .status(404)
+        .json({ message: "Question option not found", success: false });
     }
     return res.status(200).json({
-      message: 'Question option deleted successfully',
+      message: "Question option deleted successfully",
       success: true,
     });
   } catch (error) {
-    console.error('Error in deleteQuestionOption:', error);
+    console.error("Error in deleteQuestionOption:", error);
     return res.status(500).json({ message: error.message, success: false });
   }
 };

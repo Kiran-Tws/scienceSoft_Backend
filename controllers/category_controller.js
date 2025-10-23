@@ -13,14 +13,15 @@ export const createCategories = async (req, res) => {
       throw new Error("Categories data must be an array");
     }
 
-    if (!req.files || req.files.length !== categoriesData.length) {
-      throw new Error("Number of images does not match categories count");
-    }
+    // if (!req.files || req.files.length !== categoriesData.length) {
+    //   throw new Error("Number of images does not match categories count");
+    // }
 
+    const iconsArr = req.files || [];
     const categoriesToCreate = categoriesData.map((cat, index) => ({
       ...cat,
       service_id: serviceId,
-      icon: req.files[index].filename,
+      icon: iconsArr[index] ? iconsArr[index].filename : null,
     }));
 
     const createdCategories = await Categories.bulkCreate(categoriesToCreate);

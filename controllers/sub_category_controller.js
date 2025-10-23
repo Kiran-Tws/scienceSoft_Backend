@@ -1,10 +1,18 @@
 import db from '../models/index.js';
 const Subcategories = db.Subcategories;
+const Categories = db.Categories;
 
 // Create multiple subcategories with multiple icon uploads
 export const createSubCategories = async (req, res) => {
   try {
     const { categoryId } = req.params;
+
+     // Verify category exists
+    const categoryExists = await Categories.findByPk(categoryId);
+    if (!categoryExists) {
+      return res.status(404).json({ message: 'Category not found', success: false });
+    }
+
     const subCategoriesData =
       typeof req.body.subCategories === 'string'
         ? JSON.parse(req.body.subCategories)
@@ -14,14 +22,14 @@ export const createSubCategories = async (req, res) => {
       throw new Error('Subcategories data must be an array');
     }
 
-    if (!req.files || req.files.length !== subCategoriesData.length) {
-      throw new Error('Number of images does not match subcategories count');
-    }
-
+    // if (!req.files || req.files.length !== subCategoriesData.length) {
+    //   throw new Error('Number of images does not match subcategories count');
+    // }
+    const iconsArr = req.files || [];
     const subCategoriesToCreate = subCategoriesData.map((subCat, index) => ({
       ...subCat,
       category_id: categoryId,
-      icon: req.files[index].filename,
+      icon: iconsArr[index] ? iconsArr[index].filename : null,
     }));
 
     const createdSubCategories = await Subcategories.bulkCreate(subCategoriesToCreate);
@@ -85,7 +93,7 @@ export const updateSubCategory = async (req, res) => {
 };
 
 // Delete subcategory by id
-export const deleteCategory = async (req, res) => {
+export const deleteSubCategory = async (req, res) => {
   try {
     const { subCategoryId } = req.params;
     const deleted = await Subcategories.destroy({ where: { id: subCategoryId } });

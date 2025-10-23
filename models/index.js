@@ -8,6 +8,14 @@ import { fileURLToPath } from 'url';
 import Sequelize from 'sequelize';
 import process from 'process';
 import config from '../config/config.json' assert { type: 'json' };
+import ServicesModel from './services.js';
+import CategoryModel from './categories.js';
+import SubCategoryModel from './subcategories.js';
+import FormStepsModels from './form_steps.js';
+import QuestionsModel from './questions.js';
+import QuestionOptionsModel from './question_options.js';
+import ContactFormModel from './final_contact.js';
+import UserResponseModel from './user_responses.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -49,5 +57,15 @@ Object.keys(db).forEach(modelName => {
 
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
+
+// Initialize all models
+db.Services = ServicesModel(sequelize, Sequelize.DataTypes);
+db.Categories = CategoryModel(sequelize,Sequelize.DataTypes);
+db.Subcategories = SubCategoryModel(sequelize,Sequelize.DataTypes);
+db.FormSteps= FormStepsModels(sequelize,Sequelize.DataTypes);
+db.Questions = QuestionsModel(sequelize,Sequelize.DataTypes);
+db.QuestionOptions = QuestionOptionsModel(sequelize,Sequelize.DataTypes);
+db.FinalContact = ContactFormModel(sequelize,Sequelize.DataTypes);
+db.UserResponses = UserResponseModel(sequelize,Sequelize.DataTypes);
 
 export default db;

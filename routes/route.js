@@ -14,7 +14,7 @@ import {
   deleteCategory,
 } from "../controllers/category_controller.js";
 import { multipleFilesUpload, singleFileUpload } from "../utils/multerConfig.js";
-import { createSubCategories, getSubCategoriesByCategory, getSubCategoryById, updateSubCategory } from "../controllers/sub_category_controller.js";
+import { createSubCategories, deleteSubCategory, getSubCategoriesByCategory, getSubCategoryById, updateSubCategory } from "../controllers/sub_category_controller.js";
 import { createFormSteps, deleteFormStep, getFormStepById, getFormStepsBySubCategory, updateFormStep } from "../controllers/form_steps_controller.js";
 import { createQuestions, deleteQuestion, getQuestionById, getQuestionsByFormStep, updateQuestion } from "../controllers/questions_controller.js";
 import { createQuestionOptions, deleteQuestionOption, getQuestionOptionById, getQuestionOptionsByQuestion, updateQuestionOption } from "../controllers/qus_options_controller.js";
@@ -42,7 +42,7 @@ router.post('/categories/:categoryId/sub_categories',multipleFilesUpload('icons'
 router.get('/categories/:categoryId/sub_categories', getSubCategoriesByCategory);
 router.get('/sub_categories/:subCategoryId', getSubCategoryById);
 router.put('/sub_categories/:subCategoryId', singleFileUpload('icon'), updateSubCategory);
-router.delete('/sub_categories/:subCategoryId', deleteCategory);
+router.delete('/sub_categories/:subCategoryId', deleteSubCategory);
 
 // Form steps routes
 router.post('/subcategories/:subCategoryId/formsteps', createFormSteps);
