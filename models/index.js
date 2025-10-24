@@ -1,4 +1,3 @@
-// index.js
 'use strict';
 
 import fs from 'fs';
@@ -8,6 +7,8 @@ import { fileURLToPath } from 'url';
 import Sequelize from 'sequelize';
 import process from 'process';
 import config from '../config/config.json' assert { type: 'json' };
+
+// Import model definitions
 import ServicesModel from './services.js';
 import CategoryModel from './categories.js';
 import SubCategoryModel from './subcategories.js';
@@ -30,26 +31,18 @@ if (config[env].use_env_variable) {
   sequelize = new Sequelize(config[env].database, config[env].username, config[env].password, config[env]);
 }
 
+// Initialize all models first, add them to db object
+db.Services = ServicesModel(sequelize, Sequelize.DataTypes);
+db.Categories = CategoryModel(sequelize, Sequelize.DataTypes);
+db.Subcategories = SubCategoryModel(sequelize, Sequelize.DataTypes);
+db.FormSteps = FormStepsModels(sequelize, Sequelize.DataTypes);
+db.Questions = QuestionsModel(sequelize, Sequelize.DataTypes);
+db.QuestionOptions = QuestionOptionsModel(sequelize, Sequelize.DataTypes);
+db.FinalContact = ContactFormModel(sequelize, Sequelize.DataTypes);
+db.UserResponses = UserResponseModel(sequelize, Sequelize.DataTypes);
 
-fs
-  .readdirSync(__dirname)
-  .filter(file => {
-    return (
-      file.indexOf('.') !== 0 &&
-      file !== basename &&
-      file.slice(-3) === '.js' &&
-      file.indexOf('.test.js') === -1
-    );
-  })
-  .forEach(async file => {
-    const modelPath = pathToFileURL(path.join(__dirname, file)).href;
-    const { default: model } = await import(modelPath);
-    const initializedModel = model(sequelize, Sequelize.DataTypes);
-    db[initializedModel.name] = initializedModel;
-  });
-
-
-Object.keys(db).forEach(modelName => {
+// Now call 'associate' on each model if it exists: this sets up associations using the full db object
+Object.keys(db).forEach((modelName) => {
   if (db[modelName].associate) {
     db[modelName].associate(db);
   }
@@ -58,14 +51,6 @@ Object.keys(db).forEach(modelName => {
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 
-// Initialize all models
-db.Services = ServicesModel(sequelize, Sequelize.DataTypes);
-db.Categories = CategoryModel(sequelize,Sequelize.DataTypes);
-db.Subcategories = SubCategoryModel(sequelize,Sequelize.DataTypes);
-db.FormSteps= FormStepsModels(sequelize,Sequelize.DataTypes);
-db.Questions = QuestionsModel(sequelize,Sequelize.DataTypes);
-db.QuestionOptions = QuestionOptionsModel(sequelize,Sequelize.DataTypes);
-db.FinalContact = ContactFormModel(sequelize,Sequelize.DataTypes);
-db.UserResponses = UserResponseModel(sequelize,Sequelize.DataTypes);
-
 export default db;
+
+

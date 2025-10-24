@@ -1,19 +1,25 @@
 // models/questions.js
-'use strict';
+"use strict";
 
-import { Model } from 'sequelize';
+import { Model } from "sequelize";
 
 export default (sequelize, DataTypes) => {
   class Questions extends Model {
     static associate(models) {
       // Associate Questions with FormSteps
-   Questions.belongsTo(models.FormSteps, {
-        as: 'form_step',
-        foreignKey: 'form_step_id',
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE',
+      Questions.belongsTo(models.FormSteps, {
+        as: "form_step",
+        foreignKey: "form_step_id",
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
       });
-     
+
+      Questions.hasMany(models.QuestionOptions, {
+        as: "options",
+        foreignKey: "question_id",
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
+      });
     }
   }
 
@@ -29,8 +35,8 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-          model: 'form_steps',
-          key: 'id',
+          model: "form_steps",
+          key: "id",
         },
       },
       question_text: {
@@ -41,7 +47,7 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false,
         validate: {
-          isIn: [['text', 'number', 'radio', 'checkbox', 'dropdown']], // Enforce allowed input types
+          isIn: [["text", "number", "radio", "checkbox", "dropdown"]], // Enforce allowed input types
         },
       },
       allow_other: {
@@ -65,11 +71,11 @@ export default (sequelize, DataTypes) => {
     },
     {
       sequelize,
-      tableName: 'questions',
-      modelName: 'Questions',
+      tableName: "questions",
+      modelName: "Questions",
       timestamps: true,
-      updatedAt: 'updated_at',
-      createdAt: 'created_at',
+      updatedAt: "updated_at",
+      createdAt: "created_at",
     }
   );
 

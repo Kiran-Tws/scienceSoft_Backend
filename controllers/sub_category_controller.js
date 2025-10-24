@@ -1,19 +1,20 @@
 import db from '../models/index.js';
 const Subcategories = db.Subcategories;
 const Categories = db.Categories;
+import { Op } from 'sequelize';
 
 // Create multiple subcategories with multiple icon uploads
 export const createSubCategories = async (req, res) => {
   try {
     const { categoryId } = req.params;
 
-     // Verify category exists
+    // Verify category exists
     const categoryExists = await Categories.findByPk(categoryId);
     if (!categoryExists) {
       return res.status(404).json({ message: 'Category not found', success: false });
     }
 
-    const subCategoriesData =
+    let subCategoriesData =
       typeof req.body.subCategories === 'string'
         ? JSON.parse(req.body.subCategories)
         : req.body.subCategories;
@@ -22,10 +23,39 @@ export const createSubCategories = async (req, res) => {
       throw new Error('Subcategories data must be an array');
     }
 
-    // if (!req.files || req.files.length !== subCategoriesData.length) {
-    //   throw new Error('Number of images does not match subcategories count');
-    // }
     const iconsArr = req.files || [];
+
+    // Check for duplicate names within the request payload itself
+    const namesInRequest = subCategoriesData.map(sc => sc.name.toLowerCase().trim());
+    const duplicateNamesInRequest = namesInRequest.filter((name, idx) => namesInRequest.indexOf(name) !== idx);
+    if (duplicateNamesInRequest.length > 0) {
+      return res.status(400).json({
+        message: 'Duplicate subcategory names found in the request: ' + [...new Set(duplicateNamesInRequest)].join(', '),
+        success: false,
+      });
+    }
+
+    // Check for existing subcategories with same name in the DB under the same category
+    const existingSubcategories = await Subcategories.findAll({
+      where: {
+        category_id: categoryId,
+        name: subCategoriesData.map(sc => sc.name.trim()),
+      },
+      attributes: ['name'],
+      raw: true,
+    });
+
+    if (existingSubcategories.length > 0) {
+      const existingNames = existingSubcategories.map(sc => sc.name.toLowerCase());
+      const duplicates = subCategoriesData
+        .map(sc => sc.name.toLowerCase())
+        .filter(name => existingNames.includes(name));
+      return res.status(400).json({
+        message: 'Subcategory names already exist: ' + [...new Set(duplicates)].join(', '),
+        success: false,
+      });
+    }
+
     const subCategoriesToCreate = subCategoriesData.map((subCat, index) => ({
       ...subCat,
       category_id: categoryId,
@@ -44,6 +74,7 @@ export const createSubCategories = async (req, res) => {
     return res.status(500).json({ message: error.message, success: false });
   }
 };
+
 
 // Get all subcategories by category id
 export const getSubCategoriesByCategory = async (req, res) => {
@@ -77,20 +108,55 @@ export const updateSubCategory = async (req, res) => {
   try {
     const { subCategoryId } = req.params;
     const updatedData = { ...req.body };
+
     if (req.file) {
       updatedData.icon = req.file.filename;
     }
-    const [updated] = await Subcategories.update(updatedData, { where: { id: subCategoryId } });
+
+    // Fetch existing subcategory to identify its category
+    const existingSubCategory = await Subcategories.findByPk(subCategoryId);
+    if (!existingSubCategory) {
+      return res.status(404).json({ message: 'Subcategory not found', success: false });
+    }
+
+    // If updating the name, check for duplicates in the same category excluding current subcategory
+    if (updatedData.name && updatedData.name.trim() !== existingSubCategory.name) {
+      const duplicate = await Subcategories.findOne({
+        where: {
+          category_id: existingSubCategory.category_id,
+          name: updatedData.name.trim(),
+          id: { [Op.ne]: subCategoryId },
+        },
+      });
+      if (duplicate) {
+        return res.status(400).json({
+          message: 'Subcategory name already exists in this category',
+          success: false,
+        });
+      }
+    }
+
+    const [updated] = await Subcategories.update(updatedData, {
+      where: { id: subCategoryId },
+    });
+
     if (!updated) {
       return res.status(404).json({ message: 'Subcategory not found', success: false });
     }
+
     const updatedSubCategory = await Subcategories.findByPk(subCategoryId);
-    return res.status(200).json({ data: updatedSubCategory, success: true, message: 'Subcategory updated successfully' });
+
+    return res.status(200).json({
+      data: updatedSubCategory,
+      success: true,
+      message: 'Subcategory updated successfully',
+    });
   } catch (error) {
     console.error('Error in updateSubCategory:', error);
     return res.status(500).json({ message: error.message, success: false });
   }
 };
+
 
 // Delete subcategory by id
 export const deleteSubCategory = async (req, res) => {

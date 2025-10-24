@@ -1,15 +1,19 @@
 import db from '../models/index.js';
 const Questions = db.Questions;
 const FormSteps = db.FormSteps;
+import { Op } from 'sequelize';
 
 // Create single or multiple questions for a form step
 export const createQuestions = async (req, res) => {
   try {
     const { formStepId } = req.params;
-     const formStepExists = await FormSteps.findByPk(formStepId);
+
+    // Check if form step exists
+    const formStepExists = await FormSteps.findByPk(formStepId);
     if (!formStepExists) {
       return res.status(404).json({ message: 'Form step not found', success: false });
     }
+
     let questionsData = req.body;
 
     // If questions sent as JSON string, parse it
@@ -19,6 +23,37 @@ export const createQuestions = async (req, res) => {
 
     // Always treat as array for bulkCreate
     const questionsArray = Array.isArray(questionsData.questions) ? questionsData.questions : [questionsData.questions];
+
+    // Check for duplicates in request payload
+    const namesInRequest = questionsArray.map(q => q.question_text.toLowerCase().trim());
+    const duplicateNamesInRequest = namesInRequest.filter((name, idx) => namesInRequest.indexOf(name) !== idx);
+    if (duplicateNamesInRequest.length > 0) {
+      return res.status(400).json({
+        message: 'Duplicate question texts found in the request: ' + [...new Set(duplicateNamesInRequest)].join(', '),
+        success: false,
+      });
+    }
+
+    // Check for duplicates in DB for the same form step
+    const existingQuestions = await Questions.findAll({
+      where: {
+        form_step_id: formStepId,
+        question_text: questionsArray.map(q => q.question_text.trim()),
+      },
+      attributes: ['question_text'],
+      raw: true,
+    });
+
+    if (existingQuestions.length > 0) {
+      const existingNames = existingQuestions.map(q => q.question_text.toLowerCase());
+      const duplicates = questionsArray
+        .map(q => q.question_text.toLowerCase())
+        .filter(name => existingNames.includes(name));
+      return res.status(400).json({
+        message: 'Question texts already exist: ' + [...new Set(duplicates)].join(', '),
+        success: false,
+      });
+    }
 
     const questionsToCreate = questionsArray.map(q => ({
       ...q,
@@ -78,10 +113,35 @@ export const updateQuestion = async (req, res) => {
   try {
     const { questionId } = req.params;
     const updatedData = { ...req.body };
+
+    // Fetch existing question to get form_step_id and current question_text
+    const existingQuestion = await Questions.findByPk(questionId);
+    if (!existingQuestion) {
+      return res.status(404).json({ message: 'Question not found', success: false });
+    }
+
+    // If updating question_text, validate uniqueness within same form_step_id
+    if (updatedData.question_text && updatedData.question_text.trim() !== existingQuestion.question_text) {
+      const duplicate = await Questions.findOne({
+        where: {
+          form_step_id: existingQuestion.form_step_id,
+          question_text: updatedData.question_text.trim(),
+          id: { [Op.ne]: questionId },
+        },
+      });
+      if (duplicate) {
+        return res.status(400).json({
+          message: 'Question text already exists in this form step',
+          success: false,
+        });
+      }
+    }
+
     const [updated] = await Questions.update(updatedData, { where: { id: questionId } });
     if (!updated) {
       return res.status(404).json({ message: 'Question not found', success: false });
     }
+
     const updatedQuestion = await Questions.findByPk(questionId);
     return res.status(200).json({
       data: updatedQuestion,

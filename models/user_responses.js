@@ -1,31 +1,31 @@
 // models/user_responses.js
-'use strict';
+"use strict";
 
-import { Model } from 'sequelize';
+import { Model } from "sequelize";
 
 export default (sequelize, DataTypes) => {
   class UserResponses extends Model {
     static associate(models) {
       // Associate UserResponses with Questions
       UserResponses.belongsTo(models.Questions, {
-        as: 'question',
-        foreignKey: 'question_id',
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE',
+        as: "question",
+        foreignKey: "question_id",
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
       });
       // Associate UserResponses with Subcategories
-      UserResponses.belongsTo(models.Subcategories, {
-        as: 'subcategory',
-        foreignKey: 'subcategory_id',
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE',
+      UserResponses.belongsTo(models.FormSteps, {
+        as: "form_step",
+        foreignKey: "form_step_id",
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
       });
       // Associate UserResponses with QuestionOptions
       UserResponses.belongsTo(models.QuestionOptions, {
-        as: 'selected_option',
-        foreignKey: 'selected_option_id',
-        onDelete: 'SET NULL',
-        onUpdate: 'CASCADE',
+        as: "selected_option",
+        foreignKey: "selected_option_id",
+        onDelete: "SET NULL",
+        onUpdate: "CASCADE",
         constraints: false, // Allow null since the column is nullable
       });
     }
@@ -47,24 +47,24 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-          model: 'questions',
-          key: 'id',
+          model: "questions",
+          key: "id",
         },
       },
-      subcategory_id: {
+      form_step_id: {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-          model: 'subcategories',
-          key: 'id',
+          model: "form_steps", 
+          key: "id",
         },
       },
       selected_option_id: {
         type: DataTypes.UUID,
         allowNull: true,
         references: {
-          model: 'question_options',
-          key: 'id',
+          model: "question_options",
+          key: "id",
         },
       },
       response_value: {
@@ -78,10 +78,10 @@ export default (sequelize, DataTypes) => {
     },
     {
       sequelize,
-      tableName: 'user_responses',
-      modelName: 'UserResponses',
+      tableName: "user_responses",
+      modelName: "UserResponses",
       timestamps: true,
-      createdAt: 'created_at',
+      createdAt: "created_at",
       updatedAt: false, // Disable updatedAt since schema doesn't include it
     }
   );

@@ -1,17 +1,23 @@
 // models/form_steps.js
-'use strict';
+"use strict";
 
-import { Model } from 'sequelize';
+import { Model } from "sequelize";
 
 export default (sequelize, DataTypes) => {
   class FormSteps extends Model {
     static associate(models) {
       // Associate FormSteps with Subcategories
       FormSteps.belongsTo(models.Subcategories, {
-        as: 'subcategory',
-        foreignKey: 'subcategory_id',
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE',
+        as: "subcategory",
+        foreignKey: "subcategory_id",
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
+      });
+      FormSteps.hasMany(models.Questions, {
+        as: "questions",
+        foreignKey: "form_step_id",
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
       });
     }
   }
@@ -28,8 +34,8 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-          model: 'subcategories',
-          key: 'id',
+          model: "subcategories",
+          key: "id",
         },
       },
       step_order: {
@@ -55,11 +61,11 @@ export default (sequelize, DataTypes) => {
     },
     {
       sequelize,
-      tableName: 'form_steps',
-      modelName: 'FormSteps',
+      tableName: "form_steps",
+      modelName: "FormSteps",
       timestamps: true,
-      updatedAt: 'updated_at',
-      createdAt: 'created_at',
+      updatedAt: "updated_at",
+      createdAt: "created_at",
     }
   );
 

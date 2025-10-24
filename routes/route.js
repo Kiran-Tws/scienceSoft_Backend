@@ -15,10 +15,10 @@ import {
 } from "../controllers/category_controller.js";
 import { multipleFilesUpload, singleFileUpload } from "../utils/multerConfig.js";
 import { createSubCategories, deleteSubCategory, getSubCategoriesByCategory, getSubCategoryById, updateSubCategory } from "../controllers/sub_category_controller.js";
-import { createFormSteps, deleteFormStep, getFormStepById, getFormStepsBySubCategory, updateFormStep } from "../controllers/form_steps_controller.js";
+import { createFormSteps, deleteFormStep, getFormStepById, getFormStepDetails, getFormStepsBySubCategory, updateFormStep } from "../controllers/form_steps_controller.js";
 import { createQuestions, deleteQuestion, getQuestionById, getQuestionsByFormStep, updateQuestion } from "../controllers/questions_controller.js";
 import { createQuestionOptions, deleteQuestionOption, getQuestionOptionById, getQuestionOptionsByQuestion, updateQuestionOption } from "../controllers/qus_options_controller.js";
-import { createUserResponses, deleteUserResponse, getUserResponseById, getUserResponsesBySession, updateUserResponse } from "../controllers/user_response_controller.js";
+import { deleteUserResponse, getUserResponseById, getUserResponsesBySession, saveUserResponses, updateUserResponse } from "../controllers/user_response_controller.js";
 import { createFinalContact, deleteFinalContact, getFinalContactById, getFinalContactsBySession, updateFinalContact } from "../controllers/contact_form_controller.js";
 
 const router = express.Router();
@@ -50,6 +50,7 @@ router.get('/subcategories/:subCategoryId/formsteps', getFormStepsBySubCategory)
 router.get('/formsteps/:formStepId', getFormStepById);
 router.put('/formsteps/:formStepId', updateFormStep);
 router.delete('/formsteps/:formStepId', deleteFormStep);
+router.get('/getFormStepDetails/:formStepId',getFormStepDetails);
 
 // Form_Qustions routes
 router.post('/formsteps/:formStepId/questions', createQuestions);
@@ -57,6 +58,7 @@ router.get('/formsteps/:formStepId/questions', getQuestionsByFormStep);
 router.get('/questions/:questionId', getQuestionById);
 router.put('/questions/:questionId', updateQuestion);
 router.delete('/questions/:questionId', deleteQuestion);
+
 
 //Questions Options
 router.post('/questions/:questionId/options', createQuestionOptions);
@@ -66,18 +68,18 @@ router.put('/options/:optionId', updateQuestionOption);
 router.delete('/options/:optionId', deleteQuestionOption);
 
 //Contact-form routes
-router.post('/final-contacts', createFinalContact);
+router.post('/final-contacts/:sessionId', createFinalContact);
 router.get('/final-contacts/:contactId', getFinalContactById);
 router.get('/final-contacts/session/:sessionId', getFinalContactsBySession);
 router.put('/final-contacts/:contactId', updateFinalContact);
 router.delete('/final-contacts/:contactId', deleteFinalContact);
 
 // User Response routes
-router.post('/user-responses', createUserResponses);
-router.get('/user-responses/session/:sessionId', getUserResponsesBySession);
-router.get('/user-responses/:responseId', getUserResponseById);
-router.put('/user-responses/:responseId', updateUserResponse);
-router.delete('/user-responses/:responseId', deleteUserResponse);
+router.post('/user_responses/:formStepId', saveUserResponses);   
+router.get('/user_responses/session/:sessionId',getUserResponsesBySession);
+router.get('/user_responses/:responseId', getUserResponseById);
+router.put('/user_responses/:responseId', updateUserResponse);
+router.delete('/user_responses/:responseId', deleteUserResponse);
 
 
 export default router;
