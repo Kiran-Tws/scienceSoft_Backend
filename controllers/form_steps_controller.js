@@ -4,6 +4,74 @@ const Subcategories = db.Subcategories;
 const QuestionOptions = db.QuestionOptions;
 const Questions = db.Questions;
 
+export const fetchFormsData = async (req,res) => {
+  console.log("process has started");
+  
+  try {
+    const { subcategoryId } = req.params;
+
+    // Verify subcategory exists
+    const subcategory = await Subcategories.findByPk(subcategoryId);
+    if (!subcategory) {
+      return res.status(404).json({ message: 'Subcategory not found' });
+    }
+
+    // Fetch form steps with questions and options for this subcategory, ordered by step_order
+    const formSteps = await FormSteps.findAll({
+      where: { subcategory_id: subcategoryId },
+      order: [['step_order', 'ASC']],
+      include: [
+        {
+          model: Questions,
+          as: 'questions',
+          include: [
+            {
+              model: QuestionOptions,
+              as: 'options',
+              attributes: ['id', 'option_label', 'option_value', 'is_other'],
+              order: [['created_at', 'ASC']],
+            },
+          ],
+          attributes: [
+            'id',
+            'question_text',
+            'input_type',
+            'is_required',
+            'allow_other',
+          ],
+          order: [['created_at', 'ASC']],
+        },
+      ],
+      attributes: ['id', 'step_order', 'title', 'description'],
+    });
+
+    // Format data as required by frontend
+    const response = formSteps.map((step) => ({
+      id: step.id,
+      step_order: step.step_order,
+      title: step.title,
+      description: step.description,
+      questions: step.questions.map((q) => ({
+        id: q.id,
+        question_text: q.question_text,
+        input_type: q.input_type,
+        is_required: q.is_required,
+        allow_other: q.allow_other,
+        options: q.options.map((opt) => ({
+          id: opt.id,
+          option_label: opt.option_label,
+          option_value: opt.option_value,
+        })),
+      })),
+    }));
+
+    return res.json(response);
+  } catch (error) {
+    console.error('Error fetching form steps:', error);
+    return res.status(500).json({ message: 'Server error fetching form steps' });
+  }
+}
+
 // Create single or multiple form steps for a subcategory
 export const createFormSteps = async (req, res) => {
   try {
@@ -69,7 +137,6 @@ export const createFormSteps = async (req, res) => {
     return res.status(500).json({ message: error.message, success: false });
   }
 };
-
 
 // Get all form steps for a subcategory
 export const getFormStepsBySubCategory = async (req, res) => {

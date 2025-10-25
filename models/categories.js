@@ -1,17 +1,23 @@
 // models/categories.js
-'use strict';
+"use strict";
 
-import { Model } from 'sequelize';
+import { Model } from "sequelize";
 
 export default (sequelize, DataTypes) => {
   class Categories extends Model {
     static associate(models) {
       // Associate Categories with Services
       Categories.belongsTo(models.Services, {
-        as: 'service',
-        foreignKey: 'service_id',
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE',
+        as: "service",
+        foreignKey: "service_id",
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
+      });
+      Categories.hasMany(models.Subcategories, {
+        as: "subcategories",
+        foreignKey: "category_id",
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
       });
     }
   }
@@ -28,8 +34,8 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-          model: 'services',
-          key: 'id',
+          model: "services",
+          key: "id",
         },
       },
       name: {
@@ -51,11 +57,11 @@ export default (sequelize, DataTypes) => {
     },
     {
       sequelize,
-      tableName: 'categories',
-      modelName: 'Categories',
+      tableName: "categories",
+      modelName: "Categories",
       timestamps: true,
-      updatedAt: 'updated_at',
-      createdAt: 'created_at',
+      updatedAt: "updated_at",
+      createdAt: "created_at",
     }
   );
 

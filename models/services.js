@@ -1,13 +1,19 @@
 // models/services.js
-'use strict';
+"use strict";
 
-import { Model } from 'sequelize';
+import { Model } from "sequelize";
 
 export default (sequelize, DataTypes) => {
   class Services extends Model {
     static associate(models) {
       // Define associations here if needed
       // Example: Services.hasMany(models.SomeOtherModel, { foreignKey: 'serviceId' });
+      Services.hasMany(models.Categories, {
+        as: "categories",
+        foreignKey: "service_id",
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
+      });
     }
   }
 
@@ -38,11 +44,11 @@ export default (sequelize, DataTypes) => {
     },
     {
       sequelize,
-      tableName: 'services',
-      modelName: 'Services',
+      tableName: "services",
+      modelName: "Services",
       timestamps: true,
-      updatedAt: 'updated_at',
-      createdAt: 'created_at',
+      updatedAt: "updated_at",
+      createdAt: "created_at",
     }
   );
 

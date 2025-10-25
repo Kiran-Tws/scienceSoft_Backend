@@ -1,7 +1,80 @@
 import db from "../models/index.js"; // Adjust path accordingly
 const Services = db.Services;
+const Subcategories = db.Subcategories;
+const Categories = db.Categories;
 import { Op } from "sequelize";
 
+
+export const fetchServicesData = async (req,res) => {
+  try {
+    const services = await Services.findAll({
+      include: [
+        {
+          model: Categories,
+          as: "categories",
+          include: [
+            {
+              model: Subcategories,
+              as: "subcategories",
+              attributes: ["id", "name", "icon"] // adjust as needed
+            }
+          ],
+          attributes: ["id", "name", "icon"]
+        }
+      ],
+      attributes: ["id", "name","description"]
+    });
+
+    // Format the output for frontend consumption
+    const servicesData = services.map(service => ({
+      id: service.id,
+      title: service.name,
+      description: service.description,
+      categories: (service.categories || []).map(category => ({
+        id: category.id,
+        name: category.name,
+        icon: category.icon,
+        subcategories: (category.subcategories || []).map(subcategory => ({
+          id: subcategory.id,
+          name: subcategory.name,
+          icon: subcategory.icon
+        }))
+      }))
+    }));
+
+    res.json(servicesData);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch services" });
+  }
+}
+
+export const fetchCategoriesData= async (req,res) => {
+   try {
+    const { categoryId } = req.params;
+
+    const category = await Categories.findOne({
+      where: { id: categoryId },
+      include: [
+        {
+          model: Subcategories,
+          as: 'subcategories',
+          attributes: ['id', 'name', 'icon']
+        }
+      ],
+      attributes: ['id', 'name', 'icon']
+    });
+
+    if (!category) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+
+    res.json(category);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error fetching subcategories' });
+  }
+}
 
 export const createService = async (req, res) => {
   try {
