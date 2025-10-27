@@ -19,7 +19,11 @@ export const getAllInquiries = async (req, res) => {
           model: Questions,
           as: "question",
           attributes: [
-            "id", "question_text", "input_type", "allow_other", "is_required"
+            "id",
+            "question_text",
+            "input_type",
+            "allow_other",
+            "is_required",
           ],
         },
         {
@@ -57,17 +61,21 @@ export const getAllInquiries = async (req, res) => {
       order: [
         ["session_id", "ASC"],
         [{ model: FormSteps, as: "form_step" }, "step_order", "ASC"],
-        [{ model: Questions, as: "question" }, "question_text", "ASC"]
+        [{ model: Questions, as: "question" }, "question_text", "ASC"],
       ],
     });
 
     // Fetch all contacts in a single call for performance
-    const allSessionIds = [...new Set(responses.map(r => r.session_id))];
+    const allSessionIds = [...new Set(responses.map((r) => r.session_id))];
     const finalContacts = await FinalContact.findAll({
       where: { session_id: allSessionIds },
       attributes: [
-        "session_id", "name", "company_name", "work_email",
-        "phone_number", "preferred_communication"
+        "session_id",
+        "name",
+        "company_name",
+        "work_email",
+        "phone_number",
+        "preferred_communication",
       ],
     });
 
@@ -85,7 +93,8 @@ export const getAllInquiries = async (req, res) => {
       const service = first.form_step.subcategory.category.service;
       const category = first.form_step.subcategory.category;
       const subcategory = first.form_step.subcategory;
-      const contact = finalContacts.find(c => c.session_id === sessionId) || {};
+      const contact =
+        finalContacts.find((c) => c.session_id === sessionId) || {};
 
       const questions = sessionResponses.map((resp, idx) => ({
         num: idx + 1,
@@ -138,8 +147,8 @@ export const getAllInquiries = async (req, res) => {
   }
 };
 
-export const fetchInquiriesDetailsBySessionId = async (req,res) => {
-   try {
+export const fetchInquiriesDetailsBySessionId = async (req, res) => {
+  try {
     const { sessionId } = req.params;
 
     // Fetch user responses for this session with associations
@@ -149,7 +158,13 @@ export const fetchInquiriesDetailsBySessionId = async (req,res) => {
         {
           model: Questions,
           as: "question",
-          attributes: ["id", "question_text", "input_type", "allow_other", "is_required"],
+          attributes: [
+            "id",
+            "question_text",
+            "input_type",
+            "allow_other",
+            "is_required",
+          ],
         },
         {
           model: QuestionOptions,
@@ -190,13 +205,22 @@ export const fetchInquiriesDetailsBySessionId = async (req,res) => {
     });
 
     if (!responses.length) {
-      return res.status(404).json({ success: false, message: "No responses found for this session" });
+      return res.status(404).json({
+        success: false,
+        message: "No responses found for this session",
+      });
     }
 
     // Get contact info for this session
     const finalContact = await FinalContact.findOne({
       where: { session_id: sessionId },
-      attributes: ["name", "company_name", "work_email", "phone_number", "preferred_communication"],
+      attributes: [
+        "name",
+        "company_name",
+        "work_email",
+        "phone_number",
+        "preferred_communication",
+      ],
     });
 
     const first = responses[0];
@@ -204,19 +228,58 @@ export const fetchInquiriesDetailsBySessionId = async (req,res) => {
     const category = first.form_step.subcategory.category;
     const subcategory = first.form_step.subcategory;
 
-    const questions = responses.map((resp, idx) => ({
+    // const questions = responses.map((resp, idx) => ({
+    //   num: idx + 1,
+    //   id: resp.question.id,
+    //   question: resp.question.question_text,
+    //   input_type: resp.question.input_type,
+    //   answer: resp.selected_option
+    //     ? resp.selected_option.option_label
+    //     : resp.response_value,
+    //   option_details: resp.selected_option
+    //     ? {
+    //         id: resp.selected_option.id,
+    //         value: resp.selected_option.option_value,
+    //         is_other: resp.selected_option.is_other,
+    //       }
+    //     : null,
+    // }));
+
+    // Group responses by question id
+    const questionMap = {};
+
+    responses.forEach((resp) => {
+      const qid = resp.question.id;
+
+      if (!questionMap[qid]) {
+        questionMap[qid] = {
+          id: qid,
+          question: resp.question.question_text,
+          input_type: resp.question.input_type,
+          is_required: resp.question.is_required,
+          allow_other: resp.question.allow_other,
+          answers: [],
+          option_details: [],
+        };
+      }
+
+      // Append answers and details for checkboxes (and single value for radios/text)
+      if (resp.selected_option) {
+        questionMap[qid].answers.push(resp.selected_option.option_label);
+        questionMap[qid].option_details.push({
+          id: resp.selected_option.id,
+          value: resp.selected_option.option_value,
+          is_other: resp.selected_option.is_other,
+        });
+      } else if (resp.response_value) {
+        questionMap[qid].answers.push(resp.response_value);
+      }
+    });
+
+    // Convert to array and add nums
+    const questions = Object.values(questionMap).map((q, idx) => ({
+      ...q,
       num: idx + 1,
-      id: resp.question.id,
-      question: resp.question.question_text,
-      input_type: resp.question.input_type,
-      answer: resp.selected_option ? resp.selected_option.option_label : resp.response_value,
-      option_details: resp.selected_option
-        ? {
-            id: resp.selected_option.id,
-            value: resp.selected_option.option_value,
-            is_other: resp.selected_option.is_other,
-          }
-        : null,
     }));
 
     return res.status(200).json({
@@ -225,9 +288,18 @@ export const fetchInquiriesDetailsBySessionId = async (req,res) => {
       data: {
         sessionId,
         user_details: finalContact || {},
-        service: { id: service.id, name: service.name, description: service.description },
+        service: {
+          id: service.id,
+          name: service.name,
+          description: service.description,
+        },
         category: { id: category.id, name: category.name, icon: category.icon },
-        subcategory: { id: subcategory.id, name: subcategory.name, icon: subcategory.icon, description: subcategory.description },
+        subcategory: {
+          id: subcategory.id,
+          name: subcategory.name,
+          icon: subcategory.icon,
+          description: subcategory.description,
+        },
         questions,
       },
     });
@@ -235,156 +307,178 @@ export const fetchInquiriesDetailsBySessionId = async (req,res) => {
     console.error("Error fetching inquiry details:", error);
     return res.status(500).json({ success: false, message: error.message });
   }
-}
-
+};
 
 // Create single or multiple user responses - expects array in body
+
 export const saveUserResponses = async (req, res) => {
-  const transaction = await sequelize.transaction();
+  console.log("PROCESS HAS STARTED");
 
   try {
-    const { formStepId } = req.params;
+    await sequelize.transaction(async (transaction) => {
+      const { formStepId } = req.params;
+      console.log("formStepId ->>", formStepId);
 
-    const formStep = await FormSteps.findByPk(formStepId, { transaction });
-    if (!formStep) {
-      await transaction.rollback();
-      return res.status(404).json({
-        message: "Form step not found",
-        success: false,
-      });
-    }
+      const formStep = await FormSteps.findByPk(formStepId, { transaction });
+      console.log("formStep ->", formStep);
 
-    const responses = Array.isArray(req.body)
-      ? req.body
-      : req.body.responses
-      ? JSON.parse(req.body.responses)
-      : [];
-
-    if (!Array.isArray(responses) || responses.length === 0) {
-      await transaction.rollback();
-      return res.status(400).json({
-        message: "Responses must be a non-empty array",
-        success: false,
-      });
-    }
-
-    let sessionId;
-
-    if (formStep.step_order === 1) {
-      sessionId = uuidv4();
-    } else {
-      sessionId = req.headers["x-session-id"];
-      if (!sessionId) {
-        await transaction.rollback();
-        return res.status(400).json({
-          message: "Session ID header (x-session-id) is required for this step",
-          success: false,
-        });
-      }
-
-      const sessionExists = await UserResponses.findOne({
-        where: { session_id: sessionId },
-        transaction,
-      });
-      if (!sessionExists) {
-        await transaction.rollback();
+      if (!formStep) {
         return res.status(404).json({
-          message: "Session ID not found",
+          message: "Form step not found",
           success: false,
         });
       }
-    }
 
-    const questionIds = responses.map((r) => r.question_id);
-    const questionsInStep = await Questions.findAll({
-      where: {
-        id: questionIds,
-        form_step_id: formStepId,
-      },
-      transaction,
-    });
+      const responses = Array.isArray(req.body)
+        ? req.body
+        : req.body.responses
+        ? JSON.parse(req.body.responses)
+        : [];
 
-    if (questionsInStep.length !== questionIds.length) {
-      await transaction.rollback();
-      return res.status(400).json({
-        message:
-          "One or more question IDs are invalid or do not belong to the form step",
-        success: false,
-      });
-    }
+      console.log("responses ->>", responses);
 
-    // Validate selected_option_id for each response
-    for (const resp of responses) {
-      if (resp.selected_option_id) {
-        const option = await QuestionOptions.findOne({
-          where: {
-            id: resp.selected_option_id,
-            question_id: resp.question_id,
-          },
+      if (!Array.isArray(responses) || responses.length === 0) {
+        return res.status(400).json({
+          message: "Responses must be a non-empty array",
+          success: false,
+        });
+      }
+
+      let sessionId;
+
+      if (formStep.step_order === 1) {
+        sessionId = uuidv4();
+        console.log("sessionId ->>", sessionId);
+      } else {
+        sessionId = req.headers["x-session-id"];
+        console.log("sessionId ->>", sessionId);
+
+        if (!sessionId) {
+          return res.status(400).json({
+            message: "Session ID header (x-session-id) is required for this step",
+            success: false,
+          });
+        }
+
+        const sessionExists = await UserResponses.findOne({
+          where: { session_id: sessionId },
           transaction,
         });
-        if (!option) {
-          await transaction.rollback();
-          return res.status(400).json({
-            message: `Selected option ID ${resp.selected_option_id} is invalid or does not belong to question ${resp.question_id}`,
+        console.log("sessionExists ->>", sessionExists);
+
+        if (!sessionExists) {
+          return res.status(404).json({
+            message: "Session ID not found",
             success: false,
           });
         }
       }
-    }
 
-    const createdOrUpdatedResponses = [];
+      const questionIds = [...new Set(responses.map((r) => r.question_id))];
 
-    for (const resp of responses) {
-      // Check if record exists for session, formStep, question
-      const existingResponse = await UserResponses.findOne({
+      console.log("questionIds ->", questionIds);
+
+      const questionsInStep = await Questions.findAll({
+        where: {
+          id: questionIds,
+          form_step_id: formStepId,
+        },
+        transaction,
+      });
+      console.log("questionsInStep ->", questionsInStep);
+
+      // Validate selected_option_id for each response
+      for (const resp of responses) {
+        if (resp.selected_option_id) {
+          const option = await QuestionOptions.findOne({
+            where: {
+              id: resp.selected_option_id,
+              question_id: resp.question_id,
+            },
+            transaction,
+          });
+          if (!option) {
+            return res.status(400).json({
+              message: `Selected option ID ${resp.selected_option_id} is invalid or does not belong to question ${resp.question_id}`,
+              success: false,
+            });
+          }
+        }
+      }
+
+      // Fetch existing responses for session, step, question ids
+      const existingResponses = await UserResponses.findAll({
         where: {
           session_id: sessionId,
           form_step_id: formStepId,
-          question_id: resp.question_id,
+          question_id: questionIds,
         },
         transaction,
       });
 
-      if (existingResponse) {
-        // Update existing record
-        await existingResponse.update(
-          {
-            selected_option_id: resp.selected_option_id || null,
-            response_value: resp.response_value || null,
-          },
-          { transaction }
-        );
+      // Build sets for easy lookup from existing and incoming responses
+      const incomingResponsesSet = new Set(
+        responses.map((r) => `${r.question_id}-${r.selected_option_id || "null"}`)
+      );
 
-        createdOrUpdatedResponses.push(existingResponse);
-      } else {
-        // Create new record
-        const newResp = await UserResponses.create(
-          {
-            ...resp,
-            session_id: sessionId,
-            form_step_id: formStepId,
-          },
-          { transaction }
-        );
-        createdOrUpdatedResponses.push(newResp);
+      const existingResponsesSet = new Set(
+        existingResponses.map(
+          (r) => `${r.question_id}-${r.selected_option_id || "null"}`
+        )
+      );
+
+      // Delete DB records that exist but are NOT in incoming payload
+      for (const dbResp of existingResponses) {
+        const key = `${dbResp.question_id}-${dbResp.selected_option_id || "null"}`;
+        if (!incomingResponsesSet.has(key)) {
+          await dbResp.destroy({ transaction });
+        }
       }
-    }
 
-    await transaction.commit();
+      // Create or update records from incoming payload
+      const createdOrUpdatedResponses = [];
 
-    return res.status(201).json({
-      data: createdOrUpdatedResponses,
-      success: true,
-      message: "Responses saved successfully",
-      sessionId,
+      for (const resp of responses) {
+        const key = `${resp.question_id}-${resp.selected_option_id || "null"}`;
+        const existingResponse = existingResponses.find(
+          (r) => r.question_id === resp.question_id && r.selected_option_id === resp.selected_option_id
+        );
+
+        if (existingResponse) {
+          await existingResponse.update(
+            {
+              selected_option_id: resp.selected_option_id || null,
+              response_value: resp.response_value || null,
+            },
+            { transaction }
+          );
+          createdOrUpdatedResponses.push(existingResponse);
+        } else {
+          const newResp = await UserResponses.create(
+            {
+              ...resp,
+              session_id: sessionId,
+              form_step_id: formStepId,
+            },
+            { transaction }
+          );
+          createdOrUpdatedResponses.push(newResp);
+        }
+      }
+
+      res.status(201).json({
+        data: createdOrUpdatedResponses,
+        success: true,
+        message: "Responses saved successfully",
+        sessionId,
+      });
     });
   } catch (error) {
-    await transaction.rollback();
     console.error("Error saving user responses:", error);
     return res.status(500).json({ message: error.message, success: false });
   }
 };
+
 
 // Get user responses by sessionId
 export const getUserResponsesBySession = async (req, res) => {
@@ -469,22 +563,42 @@ export const getUserResponsesBySession = async (req, res) => {
     const category = first.form_step.subcategory.category;
     const subcategory = first.form_step.subcategory;
 
-    // Pack questions simply as: [ {question_text, answer details}, ... ]
-    const questions = responses.map((resp, idx) => ({
+    // 1. Group all UserResponses by question_id
+    const groupedResponses = {};
+
+    responses.forEach((resp) => {
+      const qid = resp.question.id;
+      if (!groupedResponses[qid]) {
+        groupedResponses[qid] = {
+          num: 0, // will set later
+          id: qid,
+          question: resp.question.question_text,
+          input_type: resp.question.input_type,
+          is_required: resp.question.is_required,
+          allow_other: resp.question.allow_other,
+          answers: [],
+          option_details: [],
+        };
+      }
+      // For checkboxes/radios, collect all selected values
+      groupedResponses[qid].answers.push(
+        resp.selected_option
+          ? resp.selected_option.option_label
+          : resp.response_value
+      );
+      if (resp.selected_option) {
+        groupedResponses[qid].option_details.push({
+          id: resp.selected_option.id,
+          value: resp.selected_option.option_value,
+          is_other: resp.selected_option.is_other,
+        });
+      }
+    });
+
+    // 2. Convert to array and assign numbers
+    const questions = Object.values(groupedResponses).map((q, idx) => ({
+      ...q,
       num: idx + 1,
-      id: resp.question.id,
-      question: resp.question.question_text,
-      input_type: resp.question.input_type,
-      answer: resp.selected_option
-        ? resp.selected_option.option_label
-        : resp.response_value,
-      option_details: resp.selected_option
-        ? {
-            id: resp.selected_option.id,
-            value: resp.selected_option.option_value,
-            is_other: resp.selected_option.is_other,
-          }
-        : null,
     }));
 
     return res.status(200).json({
@@ -512,6 +626,113 @@ export const getUserResponsesBySession = async (req, res) => {
         questions,
       },
     });
+
+    // Pack questions simply as: [ {question_text, answer details}, ... ]
+    // const questions = responses.map((resp, idx) => ({
+    //   num: idx + 1,
+    //   id: resp.question.id,
+    //   question: resp.question.question_text,
+    //   input_type: resp.question.input_type,
+    //   answer: resp.selected_option
+    //     ? resp.selected_option.option_label
+    //     : resp.response_value,
+    //   option_details: resp.selected_option
+    //     ? {
+    //         id: resp.selected_option.id,
+    //         value: resp.selected_option.option_value,
+    //         is_other: resp.selected_option.is_other,
+    //       }
+    //     : null,
+    // }));
+    // Group responses by question_id
+    // const grouped = {};
+
+    // responses.forEach((resp) => {
+    //   const qId = resp.question.id;
+    //   if (!grouped[qId]) {
+    //     grouped[qId] = {
+    //       num: 0, // We'll update later if you need numbering
+    //       id: resp.question.id,
+    //       question: resp.question.question_text,
+    //       input_type: resp.question.input_type,
+    //       answers: [],
+    //       option_details: [],
+    //       is_required: resp.question.is_required,
+    //       allow_other: resp.question.allow_other,
+    //     };
+    //   }
+
+    //   grouped[qId].answers.push(
+    //     resp.selected_option
+    //       ? resp.selected_option.option_label
+    //       : resp.response_value
+    //   );
+    //   if (resp.selected_option) {
+    //     grouped[qId].option_details.push({
+    //       id: resp.selected_option.id,
+    //       value: resp.selected_option.option_value,
+    //       is_other: resp.selected_option.is_other,
+    //     });
+    //   }
+    // });
+
+    // // Convert to array and assign number
+    // const questions = Object.values(grouped).map((q, idx) => ({
+    //   ...q,
+    //   num: idx + 1,
+    // }));
+
+    // return res.status(200).json({
+    //   success: true,
+    //   message: "User inquiry summary",
+    //   data: {
+    //     sessionId,
+    //     user_details: finalContact,
+    //     service: {
+    //       id: service.id,
+    //       name: service.name,
+    //       description: service.description,
+    //     },
+    //     category: {
+    //       id: category.id,
+    //       name: category.name,
+    //       icon: category.icon,
+    //     },
+    //     subcategory: {
+    //       id: subcategory.id,
+    //       name: subcategory.name,
+    //       icon: subcategory.icon,
+    //       description: subcategory.description,
+    //     },
+    //     questions,
+    //   },
+    // });
+
+    // return res.status(200).json({
+    //   success: true,
+    //   message: "User inquiry summary",
+    //   data: {
+    //     sessionId,
+    //     user_details: finalContact,
+    //     service: {
+    //       id: service.id,
+    //       name: service.name,
+    //       description: service.description,
+    //     },
+    //     category: {
+    //       id: category.id,
+    //       name: category.name,
+    //       icon: category.icon,
+    //     },
+    //     subcategory: {
+    //       id: subcategory.id,
+    //       name: subcategory.name,
+    //       icon: subcategory.icon,
+    //       description: subcategory.description,
+    //     },
+    //     questions,
+    //   },
+    // });
   } catch (error) {
     console.error("Error fetching user responses by session:", error);
     return res.status(500).json({ message: error.message, success: false });
