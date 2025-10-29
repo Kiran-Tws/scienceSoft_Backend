@@ -10,6 +10,43 @@ const FinalContact = db.FinalContact;
 const sequelize = db.sequelize;
 import { v4 as uuidv4 } from "uuid";
 
+export const getDashboardStats = async (req, res) => {
+  try {
+    const [
+      totalEnquiries,
+      newEnquiries,
+      totalServices,
+      totalCategories,
+      totalSubcategories,
+    ] = await Promise.all([
+      FinalContact.count(),
+      // Enquiries.count({ where: { status: 'new' } }),
+      Services.count(),
+      Categories.count(),
+      Subcategories.count(),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        totalEnquiries,
+        // newEnquiries,
+        totalServices,
+        totalCategories,
+        totalSubcategories,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch dashboard stats',
+      error: error.message,
+    });
+  }
+};
+
+
 export const getAllInquiries = async (req, res) => {
   try {
     // Fetch all user responses with all associations

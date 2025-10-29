@@ -15,7 +15,7 @@ export default (sequelize, DataTypes) => {
       });
 
       Questions.hasMany(models.QuestionOptions, {
-        as: "options",
+        as: "question",
         foreignKey: "question_id",
         onDelete: "CASCADE",
         onUpdate: "CASCADE",

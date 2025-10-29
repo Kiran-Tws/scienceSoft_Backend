@@ -1,25 +1,37 @@
 import db from "../models/index.js";
 const Categories = db.Categories;
-import { Op } from 'sequelize';
+import { Op } from "sequelize";
 
 export const createCategories = async (req, res) => {
   try {
     const { serviceId } = req.params;
-    const categoriesData =
-      typeof req.body.categories === 'string'
-        ? JSON.parse(req.body.categories)
-        : req.body.categories;
+    console.log("serviceId ->>", serviceId);
 
+    let categoriesData =
+      typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+
+    console.log("categoriesData ->>", categoriesData);
+
+    // Convert single object into array
     if (!Array.isArray(categoriesData)) {
-      throw new Error('Categories data must be an array');
+      categoriesData = [categoriesData];
     }
+    console.log("categoriesData ->>", categoriesData);
 
     // Check duplicates inside request
-    const namesInRequest = categoriesData.map(cat => cat.name.toLowerCase().trim());
-    const duplicateNamesInRequest = namesInRequest.filter((name, idx) => namesInRequest.indexOf(name) !== idx);
+    const namesInRequest = categoriesData.map((cat) =>
+      cat.name.toLowerCase().trim()
+    );
+    console.log("namesInRequest ->>", namesInRequest);
+
+    const duplicateNamesInRequest = namesInRequest.filter(
+      (name, idx) => namesInRequest.indexOf(name) !== idx
+    );
     if (duplicateNamesInRequest.length > 0) {
       return res.status(400).json({
-        message: 'Duplicate category names found in the request: ' + [...new Set(duplicateNamesInRequest)].join(', '),
+        message:
+          "Duplicate category names found in the request: " +
+          [...new Set(duplicateNamesInRequest)].join(", "),
         success: false,
       });
     }
@@ -28,19 +40,21 @@ export const createCategories = async (req, res) => {
     const existingCategories = await Categories.findAll({
       where: {
         service_id: serviceId,
-        name: categoriesData.map(cat => cat.name.trim()),
+        name: categoriesData.map((cat) => cat.name.trim()),
       },
-      attributes: ['name'],
+      attributes: ["name"],
       raw: true,
     });
 
     if (existingCategories.length > 0) {
-      const existingNames = existingCategories.map(c => c.name.toLowerCase());
+      const existingNames = existingCategories.map((c) => c.name.toLowerCase());
       const duplicates = categoriesData
-        .map(c => c.name.toLowerCase())
-        .filter(name => existingNames.includes(name));
+        .map((c) => c.name.toLowerCase())
+        .filter((name) => existingNames.includes(name));
       return res.status(400).json({
-        message: 'Category names already exist: ' + [...new Set(duplicates)].join(', '),
+        message:
+          "Category names already exist: " +
+          [...new Set(duplicates)].join(", "),
         success: false,
       });
     }
@@ -57,14 +71,13 @@ export const createCategories = async (req, res) => {
     return res.status(201).json({
       data: createdCategories,
       success: true,
-      message: 'Categories with images created successfully',
+      message: "Categories with images created successfully",
     });
   } catch (error) {
-    console.error('Error in createCategories:', error);
+    console.error("Error in createCategories:", error);
     return res.status(500).json({ message: error.message, success: false });
   }
 };
-
 
 export const getCategoriesByService = async (req, res) => {
   try {
@@ -114,7 +127,9 @@ export const updateCategory = async (req, res) => {
     // Fetch existing category to get related service_id
     const existingCategory = await Categories.findByPk(categoryId);
     if (!existingCategory) {
-      return res.status(404).json({ message: 'Category not found', success: false });
+      return res
+        .status(404)
+        .json({ message: "Category not found", success: false });
     }
 
     // Validate duplicate name if name is updated
@@ -128,7 +143,7 @@ export const updateCategory = async (req, res) => {
       });
       if (duplicate) {
         return res.status(400).json({
-          message: 'Category name already exists in this service',
+          message: "Category name already exists in this service",
           success: false,
         });
       }
@@ -139,7 +154,9 @@ export const updateCategory = async (req, res) => {
     });
 
     if (!updated) {
-      return res.status(404).json({ message: 'Category not found', success: false });
+      return res
+        .status(404)
+        .json({ message: "Category not found", success: false });
     }
 
     const updatedCategory = await Categories.findByPk(categoryId);
@@ -147,14 +164,13 @@ export const updateCategory = async (req, res) => {
     return res.status(200).json({
       data: updatedCategory,
       success: true,
-      message: 'Category updated successfully',
+      message: "Category updated successfully",
     });
   } catch (error) {
-    console.error('Error in updateCategory:', error);
+    console.error("Error in updateCategory:", error);
     return res.status(500).json({ message: error.message, success: false });
   }
 };
-
 
 export const deleteCategory = async (req, res) => {
   try {

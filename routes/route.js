@@ -53,6 +53,7 @@ import {
   deleteUserResponse,
   fetchInquiriesDetailsBySessionId,
   getAllInquiries,
+  getDashboardStats,
   getUserResponseById,
   getUserResponsesBySession,
   saveUserResponses,
@@ -72,6 +73,7 @@ const router = express.Router();
 router.get("/servicesData", fetchServicesData);
 router.get("/fetch_subcategories/:categoryId", fetchCategoriesData);
 router.get("/fetch_formsData/:subcategoryId", fetchFormsData);
+router.get('/get_stats',getDashboardStats);
 router.get('/inquiries/all',getAllInquiries);
 router.get('/inquiries/session/:sessionId',fetchInquiriesDetailsBySessionId);
 
@@ -85,7 +87,7 @@ router.delete("/services/:id", deleteService);
 //category routes
 router.post(
   "/services/:serviceId/categories",
-  multipleFilesUpload("icons", 10),
+  // multipleFilesUpload("icons", 10),
   createCategories
 );
 router.get("/services/:serviceId/categories", getCategoriesByService);
@@ -96,7 +98,7 @@ router.delete("/categories/:categoryId", deleteCategory);
 //sub_category routes
 router.post(
   "/categories/:categoryId/sub_categories",
-  multipleFilesUpload("icons", 10),
+  // multipleFilesUpload("icons", 10),
   createSubCategories
 );
 router.get(

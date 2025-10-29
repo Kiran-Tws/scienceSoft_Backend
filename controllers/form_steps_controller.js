@@ -87,14 +87,14 @@ export const createFormSteps = async (req, res) => {
     console.log("formStepsData ->>", formStepsData);
 
     // If body contains 'formSteps' as JSON string, parse it
-    if (typeof formStepsData.formSteps === "string") {
-      formStepsData = JSON.parse(formStepsData.formSteps);
+    if (typeof formStepsData === "string") {
+      formStepsData = JSON.parse(formStepsData);
     }
 
     // Always expect an array - wrap single object in an array
-    const stepsArray = Array.isArray(formStepsData.formSteps)
-      ? formStepsData.formSteps
-      : [formStepsData.formSteps];
+    const stepsArray = Array.isArray(formStepsData)
+      ? formStepsData
+      : [formStepsData];
     console.log("stepsArray ->>", stepsArray);
 
     // Get current max step_order for this subcategory

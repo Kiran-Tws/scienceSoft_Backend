@@ -1,17 +1,17 @@
 // models/question_options.js
-'use strict';
+"use strict";
 
-import { Model } from 'sequelize';
+import { Model } from "sequelize";
 
 export default (sequelize, DataTypes) => {
   class QuestionOptions extends Model {
     static associate(models) {
       // Associate QuestionOptions with Questions
       QuestionOptions.belongsTo(models.Questions, {
-        as: 'question',
-        foreignKey: 'question_id',
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE',
+        as: "question",
+        foreignKey: "question_id",
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
       });
     }
   }
@@ -28,9 +28,11 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-          model: 'questions',
-          key: 'id',
+          model: "questions",
+          key: "id",
         },
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
       },
       option_label: {
         type: DataTypes.STRING,
@@ -56,11 +58,11 @@ export default (sequelize, DataTypes) => {
     },
     {
       sequelize,
-      tableName: 'question_options',
-      modelName: 'QuestionOptions',
+      tableName: "question_options",
+      modelName: "QuestionOptions",
       timestamps: true,
-      updatedAt: 'updated_at',
-      createdAt: 'created_at',
+      updatedAt: "updated_at",
+      createdAt: "created_at",
     }
   );
 

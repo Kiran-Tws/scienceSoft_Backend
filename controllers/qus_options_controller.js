@@ -15,11 +15,11 @@ export const createQuestionOptions = async (req, res) => {
     }
 
     // If options sent as JSON string, parse it
-    if (typeof optionsData.options === 'string') {
-      optionsData = JSON.parse(optionsData.options);
+    if (typeof optionsData === 'string') {
+      optionsData = JSON.parse(optionsData);
     }
 
-    const optionsArray = Array.isArray(optionsData.options) ? optionsData.options : [optionsData.options];
+    const optionsArray = Array.isArray(optionsData) ? optionsData : [optionsData];
 
     // Check for duplicates within request payload
     const labelsInRequest = optionsArray.map(opt => opt.option_label.toLowerCase().trim());

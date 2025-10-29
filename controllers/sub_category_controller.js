@@ -17,12 +17,12 @@ export const createSubCategories = async (req, res) => {
     }
 
     let subCategoriesData =
-      typeof req.body.subCategories === "string"
-        ? JSON.parse(req.body.subCategories)
-        : req.body.subCategories;
+      typeof req.body === "string"
+        ? JSON.parse(req.body)
+        : req.body;
 
     if (!Array.isArray(subCategoriesData)) {
-      throw new Error("Subcategories data must be an array");
+     subCategoriesData = [subCategoriesData];
     }
 
     const iconsArr = req.files || [];
