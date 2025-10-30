@@ -54,6 +54,7 @@ import {
   fetchInquiriesDetailsBySessionId,
   getAllInquiries,
   getDashboardStats,
+  getRecentInquiries,
   getUserResponseById,
   getUserResponsesBySession,
   saveUserResponses,
@@ -76,6 +77,7 @@ router.get("/fetch_formsData/:subcategoryId", fetchFormsData);
 router.get('/get_stats',getDashboardStats);
 router.get('/inquiries/all',getAllInquiries);
 router.get('/inquiries/session/:sessionId',fetchInquiriesDetailsBySessionId);
+router.get('/enquiries/recent',getRecentInquiries);
 
 //services routes
 router.post("/create_service", createService);

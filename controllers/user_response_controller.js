@@ -8,44 +8,170 @@ const Categories = db.Categories;
 const Services = db.Services;
 const FinalContact = db.FinalContact;
 const sequelize = db.sequelize;
+import { Op, Sequelize } from "sequelize";
 import { v4 as uuidv4 } from "uuid";
 
 export const getDashboardStats = async (req, res) => {
   try {
-    const [
-      totalEnquiries,
-      newEnquiries,
-      totalServices,
-      totalCategories,
-      totalSubcategories,
-    ] = await Promise.all([
-      FinalContact.count(),
-      // Enquiries.count({ where: { status: 'new' } }),
-      Services.count(),
-      Categories.count(),
-      Subcategories.count(),
-    ]);
-
+    const enquiryCount = await FinalContact.count();
+    const servicesCount = await Services.count();
+    const categoriesCount = await Categories.count();
+    const subCategories = await Subcategories.count();
     return res.status(200).json({
       success: true,
       data: {
-        totalEnquiries,
-        // newEnquiries,
-        totalServices,
-        totalCategories,
-        totalSubcategories,
+        totalEnquiries:enquiryCount,
+        servicesCount,
+        categoriesCount,
+        subCategories,
       },
     });
   } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
+    console.error("Error fetching dashboard stats:", error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to fetch dashboard stats',
+      message: "Failed to fetch dashboard stats",
       error: error.message,
     });
   }
 };
 
+// export const getAllInquiries = async (req, res) => {
+//   try {
+//     // Fetch all user responses with all associations
+//     const responses = await UserResponses.findAll({
+//       include: [
+//         {
+//           model: Questions,
+//           as: "question",
+//           attributes: [
+//             "id",
+//             "question_text",
+//             "input_type",
+//             "allow_other",
+//             "is_required",
+//           ],
+//         },
+//         {
+//           model: QuestionOptions,
+//           as: "selected_option",
+//           attributes: ["id", "option_label", "option_value", "is_other"],
+//         },
+//         {
+//           model: FormSteps,
+//           as: "form_step",
+//           attributes: ["id", "step_order", "title", "description"],
+//           include: [
+//             {
+//               model: Subcategories,
+//               as: "subcategory",
+//               attributes: ["id", "name", "icon", "description"],
+//               include: [
+//                 {
+//                   model: Categories,
+//                   as: "category",
+//                   attributes: ["id", "name", "icon"],
+//                   include: [
+//                     {
+//                       model: Services,
+//                       as: "service",
+//                       attributes: ["id", "name", "description"],
+//                     },
+//                   ],
+//                 },
+//               ],
+//             },
+//           ],
+//         },
+//       ],
+//       order: [
+//         ["session_id", "ASC"],
+//         [{ model: FormSteps, as: "form_step" }, "step_order", "ASC"],
+//         [{ model: Questions, as: "question" }, "question_text", "ASC"],
+//       ],
+//     });
+
+//     // Fetch all contacts in a single call for performance
+//     const allSessionIds = [...new Set(responses.map((r) => r.session_id))];
+//     const finalContacts = await FinalContact.findAll({
+//       where: { session_id: allSessionIds },
+//       attributes: [
+//         "session_id",
+//         "name",
+//         "company_name",
+//         "work_email",
+//         "phone_number",
+//         "preferred_communication",
+//       ],
+//     });
+
+//     // Group responses by session_id
+//     const sessionGroups = {};
+//     for (const resp of responses) {
+//       if (!sessionGroups[resp.session_id]) sessionGroups[resp.session_id] = [];
+//       sessionGroups[resp.session_id].push(resp);
+//     }
+
+//     // Build the summary for each session
+//     const inquiries = [];
+//     for (const [sessionId, sessionResponses] of Object.entries(sessionGroups)) {
+//       const first = sessionResponses[0];
+//       const service = first.form_step.subcategory.category.service;
+//       const category = first.form_step.subcategory.category;
+//       const subcategory = first.form_step.subcategory;
+//       const contact =
+//         finalContacts.find((c) => c.session_id === sessionId) || {};
+
+//       const questions = sessionResponses.map((resp, idx) => ({
+//         num: idx + 1,
+//         id: resp.question.id,
+//         question: resp.question.question_text,
+//         input_type: resp.question.input_type,
+//         answer: resp.selected_option
+//           ? resp.selected_option.option_label
+//           : resp.response_value,
+//         option_details: resp.selected_option
+//           ? {
+//               id: resp.selected_option.id,
+//               value: resp.selected_option.option_value,
+//               is_other: resp.selected_option.is_other,
+//             }
+//           : null,
+//       }));
+
+//       inquiries.push({
+//         sessionId,
+//         user_details: contact,
+//         service: {
+//           id: service.id,
+//           name: service.name,
+//           description: service.description,
+//         },
+//         category: {
+//           id: category.id,
+//           name: category.name,
+//           icon: category.icon,
+//         },
+//         subcategory: {
+//           id: subcategory.id,
+//           name: subcategory.name,
+//           icon: subcategory.icon,
+//           description: subcategory.description,
+//         },
+//         questions,
+//       });
+//     }
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "All user inquiries",
+//       data: inquiries,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching all inquiries:", error);
+//     return res.status(500).json({ message: error.message, success: false });
+//   }
+// };
 
 export const getAllInquiries = async (req, res) => {
   try {
@@ -102,8 +228,10 @@ export const getAllInquiries = async (req, res) => {
       ],
     });
 
-    // Fetch all contacts in a single call for performance
+    // Extract all unique sessionIds from responses
     const allSessionIds = [...new Set(responses.map((r) => r.session_id))];
+
+    // Fetch final contacts whose session_id matches any from responses
     const finalContacts = await FinalContact.findAll({
       where: { session_id: allSessionIds },
       attributes: [
@@ -113,25 +241,35 @@ export const getAllInquiries = async (req, res) => {
         "work_email",
         "phone_number",
         "preferred_communication",
+        "created_at",
       ],
+      order: [["created_at", "DESC"]],
     });
 
-    // Group responses by session_id
+    // Create a Set for quick validation of sessionIds that exist in FinalContact
+    const validSessionIds = new Set(finalContacts.map((c) => c.session_id));
+
+    // Group responses by session_id but only for those present in finalContacts
     const sessionGroups = {};
     for (const resp of responses) {
+      if (!validSessionIds.has(resp.session_id)) {
+        continue; // Skip if session_id not found in finalContacts
+      }
       if (!sessionGroups[resp.session_id]) sessionGroups[resp.session_id] = [];
       sessionGroups[resp.session_id].push(resp);
     }
 
-    // Build the summary for each session
+    // Build the summary for each session in order of finalContacts (latest first)
     const inquiries = [];
-    for (const [sessionId, sessionResponses] of Object.entries(sessionGroups)) {
+    for (const contact of finalContacts) {
+      const sessionId = contact.session_id;
+      const sessionResponses = sessionGroups[sessionId];
+      if (!sessionResponses || sessionResponses.length === 0) continue;
+
       const first = sessionResponses[0];
       const service = first.form_step.subcategory.category.service;
       const category = first.form_step.subcategory.category;
       const subcategory = first.form_step.subcategory;
-      const contact =
-        finalContacts.find((c) => c.session_id === sessionId) || {};
 
       const questions = sessionResponses.map((resp, idx) => ({
         num: idx + 1,
@@ -180,6 +318,146 @@ export const getAllInquiries = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching all inquiries:", error);
+    return res.status(500).json({ message: error.message, success: false });
+  }
+};
+
+export const getRecentInquiries = async (req, res) => {
+  try {
+    // Step 1: Get 5 most recent final contacts (by createdAt DESC)
+    const finalContacts = await FinalContact.findAll({
+      order: [["created_at", "DESC"]],
+      limit: 5,
+      attributes: [
+        "session_id",
+        "name",
+        "company_name",
+        "work_email",
+        "phone_number",
+        "preferred_communication",
+        "created_at",
+      ],
+    });
+    const recentSessionIds = finalContacts.map((fc) => fc.session_id);
+
+    // Step 2: Fetch all UserResponses belonging only to these session_ids
+    const responses = await UserResponses.findAll({
+      where: { session_id: recentSessionIds },
+      include: [
+        {
+          model: Questions,
+          as: "question",
+          attributes: [
+            "id",
+            "question_text",
+            "input_type",
+            "allow_other",
+            "is_required",
+          ],
+        },
+        {
+          model: QuestionOptions,
+          as: "selected_option",
+          attributes: ["id", "option_label", "option_value", "is_other"],
+        },
+        {
+          model: FormSteps,
+          as: "form_step",
+          attributes: ["id", "step_order", "title", "description"],
+          include: [
+            {
+              model: Subcategories,
+              as: "subcategory",
+              attributes: ["id", "name", "icon", "description"],
+              include: [
+                {
+                  model: Categories,
+                  as: "category",
+                  attributes: ["id", "name", "icon"],
+                  include: [
+                    {
+                      model: Services,
+                      as: "service",
+                      attributes: ["id", "name", "description"],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      order: [
+        ["session_id", "ASC"],
+        [{ model: FormSteps, as: "form_step" }, "step_order", "ASC"],
+        [{ model: Questions, as: "question" }, "question_text", "ASC"],
+      ],
+    });
+
+    // Step 3: Group and compose as before, but limit to intersection only
+    const sessionGroups = {};
+    for (const resp of responses) {
+      if (!sessionGroups[resp.session_id]) sessionGroups[resp.session_id] = [];
+      sessionGroups[resp.session_id].push(resp);
+    }
+
+    const inquiries = [];
+    for (const finalContact of finalContacts) {
+      const sessionResponses = sessionGroups[finalContact.session_id];
+      if (!sessionResponses || sessionResponses.length === 0) continue;
+
+      const first = sessionResponses[0];
+      const service = first.form_step.subcategory.category.service;
+      const category = first.form_step.subcategory.category;
+      const subcategory = first.form_step.subcategory;
+
+      const questions = sessionResponses.map((resp, idx) => ({
+        num: idx + 1,
+        id: resp.question.id,
+        question: resp.question.question_text,
+        input_type: resp.question.input_type,
+        answer: resp.selected_option
+          ? resp.selected_option.option_label
+          : resp.response_value,
+        option_details: resp.selected_option
+          ? {
+              id: resp.selected_option.id,
+              value: resp.selected_option.option_value,
+              is_other: resp.selected_option.is_other,
+            }
+          : null,
+      }));
+
+      inquiries.push({
+        sessionId: finalContact.session_id,
+        user_details: finalContact,
+        service: {
+          id: service.id,
+          name: service.name,
+          description: service.description,
+        },
+        category: {
+          id: category.id,
+          name: category.name,
+          icon: category.icon,
+        },
+        subcategory: {
+          id: subcategory.id,
+          name: subcategory.name,
+          icon: subcategory.icon,
+          description: subcategory.description,
+        },
+        questions,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Most recent 5 inquiries",
+      data: inquiries,
+    });
+  } catch (error) {
+    console.error("Error fetching recent inquiries:", error);
     return res.status(500).json({ message: error.message, success: false });
   }
 };
@@ -347,7 +625,6 @@ export const fetchInquiriesDetailsBySessionId = async (req, res) => {
 };
 
 // Create single or multiple user responses - expects array in body
-
 export const saveUserResponses = async (req, res) => {
   console.log("PROCESS HAS STARTED");
 
@@ -392,7 +669,8 @@ export const saveUserResponses = async (req, res) => {
 
         if (!sessionId) {
           return res.status(400).json({
-            message: "Session ID header (x-session-id) is required for this step",
+            message:
+              "Session ID header (x-session-id) is required for this step",
             success: false,
           });
         }
@@ -455,7 +733,9 @@ export const saveUserResponses = async (req, res) => {
 
       // Build sets for easy lookup from existing and incoming responses
       const incomingResponsesSet = new Set(
-        responses.map((r) => `${r.question_id}-${r.selected_option_id || "null"}`)
+        responses.map(
+          (r) => `${r.question_id}-${r.selected_option_id || "null"}`
+        )
       );
 
       const existingResponsesSet = new Set(
@@ -466,7 +746,9 @@ export const saveUserResponses = async (req, res) => {
 
       // Delete DB records that exist but are NOT in incoming payload
       for (const dbResp of existingResponses) {
-        const key = `${dbResp.question_id}-${dbResp.selected_option_id || "null"}`;
+        const key = `${dbResp.question_id}-${
+          dbResp.selected_option_id || "null"
+        }`;
         if (!incomingResponsesSet.has(key)) {
           await dbResp.destroy({ transaction });
         }
@@ -478,7 +760,9 @@ export const saveUserResponses = async (req, res) => {
       for (const resp of responses) {
         const key = `${resp.question_id}-${resp.selected_option_id || "null"}`;
         const existingResponse = existingResponses.find(
-          (r) => r.question_id === resp.question_id && r.selected_option_id === resp.selected_option_id
+          (r) =>
+            r.question_id === resp.question_id &&
+            r.selected_option_id === resp.selected_option_id
         );
 
         if (existingResponse) {
@@ -515,7 +799,6 @@ export const saveUserResponses = async (req, res) => {
     return res.status(500).json({ message: error.message, success: false });
   }
 };
-
 
 // Get user responses by sessionId
 export const getUserResponsesBySession = async (req, res) => {
