@@ -8,7 +8,7 @@ export default (sequelize, DataTypes) => {
     static associate(models) {
       // Associate Questions with FormSteps
       Questions.belongsTo(models.FormSteps, {
-        as: "form_step",
+        as: "questions",
         foreignKey: "form_step_id",
         onDelete: "CASCADE",
         onUpdate: "CASCADE",
